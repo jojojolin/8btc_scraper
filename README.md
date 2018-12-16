@@ -1,5 +1,6 @@
 # 8btc_scraper
-这是一个巴比特论坛http://8btc.com/forum-2-1.html的爬虫程式
+这是一个巴比特论坛 http://8btc.com/forum-2-1.html
+的爬虫程式
 
 ## 爬的讯息
 1. 文章名称
