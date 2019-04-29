@@ -1,17 +1,18 @@
 # 8btc_scraper
-这是一个巴比特论坛 http://8btc.com/forum-2-1.html
-的爬虫程式
+This is a web scraper designed for the [8btc](http://8btc.com/forum-2-1.html)  forum.
+
+*Read this in other languages: [English](README.md), [繁體中文](README.zh-tw.md)， [简体中文](README.zh-cn.md).*
 
 ## Objective
-在用户发帖内容中提取情绪词语，构建情绪指标，与比特币期货走势拟合，构建择时策略。
+Extract emotional sentiment from user posts to construct sentimental index, which could then be used for predicting bitcoin stock prices and decision making.
 
-## 爬取讯息
-1. 文章名称
-2. 评论数
-3. 阅览数
-3. 发布日期
-4. 正面字出现次数
-5. 负面字出现次数
+## Information Extracted
+1. Title of the article
+2. Number of comments
+3. Number of views
+3. Date of publish
+4. Positive word count {好，涨，红，赚}
+5. Negative word count {差，跌，熊，绿，亏}
 
 ## Technologies
 Python 2.7, BeautifulSoup4
