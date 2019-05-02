@@ -4,7 +4,7 @@ This is a web scraper designed for the [8btc](http://8btc.com/forum-2-1.html)  f
 *Read this in other languages: [English](README.md), [繁體中文](README.zh-tw.md)， [简体中文](README.zh-cn.md).*
 
 ## Objective
-Extract emotional sentiment from user posts to construct sentimental index, which could then be used for predicting bitcoin stock prices and decision making.
+Extract emotional sentiment from users' posts and comments to construct sentimental index, which could then be used for predicting bitcoin prices and making decisions.
 
 ## Information Extracted
 1. Title of the article
