@@ -63,6 +63,7 @@ def getCookie(theUrl):
     # 第一次访问获取动态加密的JS
     req = requests.get(url=theUrl,headers=HEADERS)
     first_html = req.content.decode('UTF-8')
+    print first_html
     # 执行JS获取Cookie
     cookie_str = executejs(first_html)
     # 将Cookie转换为字典格式
@@ -76,21 +77,22 @@ def main():
     # 定义变量
     data =[] # 储存结果的容器
     offset = 1 # 记录论坛的当前页数
-    url = 'http://8btc.com/forum-2-'+str(offset)+'.html'
+    #bound = input("Number of pages to crawl: ")
+    url = 'https://www.chainnode.com/forum-2-'+str(offset)+'.html'
     data.append(('文章名称'.decode('utf-8'),'评论数','阅览数','发布日期','正面字','负面字'))
     # 从第一次普通访问截取cookie
-    cookies = getCookie(url)
-    setCookie = cookies[0]+';'+cookies[1]
+    #cookies = getCookie(url)
+    #setCookie = cookies[0]+';'+cookies[1]
     # 将截取到的两个cookies加入到以后请求的头里
-    HEADERS.update({'Cookie':setCookie})
+    #HEADERS.update({'Cookie':setCookie})
     
     #循环一直到最后一页（pg 1000）
-    while offset < 1001:
-        html=requests.get(url,
-                          headers=HEADERS).text
+    while offset < 5:
+        html=requests.get(url,headers=HEADERS).text
         soup = BeautifulSoup(html, 'html.parser')
 
-        post_divs = soup.find_all('a',attrs={'class':'s xst'})
+        post_divs = soup.find_all('a',attrs={'class':'bbt-block'})
+        print post_divs
 
         for div in post_divs:
             #div.prettify('gb18030')
@@ -100,37 +102,39 @@ def main():
             # 文章名称
             name = div.get_text()
             # 获取文章链接
-            link = div.get('href')
+            link = "https://www.chainnode.com"+div.get('href')
             # 进入文章链接
             html = requests.get(link, headers=HEADERS).text
             soup = BeautifulSoup(html, 'html.parser')
-            ppl_box = soup.select('div.barr_post > span:nth-of-type(1)')
+            ppl_box = soup.select('div.header-module__num')
             if len(ppl_box) == 1:
                 # 评论数
-                comment = ppl_box[0].get_text()
+                comment = soup.select('div.header-module__num > span:nth-of-type(2)')[0].get_text()
+                print comment
                 # 观看人数
-                ppl = soup.select('div.barr_post > span:nth-of-type(3)')[0].get_text()
+                ppl = soup.select('div.header-module__num > span:nth-of-type(1)')[0].get_text()
                 # 发布日期
-                publishDate = soup.select('div.barr_post > span:nth-of-type(5)')[0].get_text()
+                publishDate = soup.select('time')[0].get_text()
+                #print publishDate
                 # 搜集该文章的所有文字内容：包括本文和评论
-                txt = soup.select('.t_f')
+                txt = soup.select('.comment__content')[0].get_text()
+                print txt
                 for w in txt:
-                    w = w.get_text()
                     # 逐字检查是否在组内
-                    for c in w:
-                        # 若该字属于正面组，positive变量加一
-                        if c in POSITIVES:
-                            positive += 1
-                        # 若该字属于负面组，negative变量加一
-                        elif c in NEGATIVES: 
-                            negative += 1
+
+                    # 若该字属于正面组，positive变量加一
+                    if w in POSITIVES:
+                        positive += 1
+                    # 若该字属于负面组，negative变量加一
+                    elif w in NEGATIVES: 
+                        negative += 1
                 data.append((name,comment,ppl,publishDate,positive,negative))
                 
                         
             
-            # 更新页数
-            offset += 1
-            url = 'http://8btc.com/forum-2-'+str(offset)+'.html'
+        # 更新页数
+        offset +=1
+        url = 'https://www.chainnode.com/forum-2-'+str(offset)+'.html'
     
     # 最后将结果输出到btc.csv文件里
     with open('btc.csv', 'a') as csv_file:
