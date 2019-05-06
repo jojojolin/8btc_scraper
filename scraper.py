@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# encoding=utf8
+import sys
 import urllib2
 from bs4 import BeautifulSoup
 import execjs
@@ -8,31 +9,14 @@ import csv
 
 # 用于HTTP的GET请求头
 HEADERS = {
-#    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-#    'Accept-Encoding': 'gzip, deflate, sdch',
-#    'Accept-Language':'zh-CN,zh;q=0.8',
-#    'AlexaToolbar-ALX_NS_PH': 'AlexaToolbar/alx-4.0',
-#    'Cache-Control': 'max-age=0',
-#    'Connection':'keep-alive',
-#    "Host": "8btc.com",
-#    'Referer':'http://8btc.com/',
-#    #'Upgrade-Insecure-Requests':'1',
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36'
 }
 
 # 正面的情绪字
-POSITIVES = ['好'.decode('utf-8'),
-             '涨'.decode('utf-8'),
-             '牛'.decode('utf-8'),
-             '红'.decode('utf-8'),
-             '赚'.decode('utf-8')]
+POSITIVES = ['好','涨','牛','红','赚']
 
 # 负面的情绪字
-NEGATIVES = ['差'.decode('utf-8'),
-             '跌'.decode('utf-8'),
-             '熊'.decode('utf-8'),
-             '绿'.decode('utf-8'),
-             '亏'.decode('utf-8')]
+NEGATIVES = ['差','跌','熊','绿','亏']
 
 
 # 用于在python里执行JS的函数    
@@ -62,7 +46,7 @@ def parse_cookie(string):
 def getCookie(theUrl):
     # 第一次访问获取动态加密的JS
     req = requests.get(url=theUrl,headers=HEADERS)
-    first_html = req.content.decode('UTF-8')
+    first_html = req.content.decode('utf-8')
     print first_html
     # 执行JS获取Cookie
     cookie_str = executejs(first_html)
@@ -74,25 +58,31 @@ def getCookie(theUrl):
 
 
 def main():
+    reload(sys)
+    sys.setdefaultencoding('utf8')
     # 定义变量
+    targets = ['文章名称','评论数','阅览数','发布日期','正面字','负面字']
     data =[] # 储存结果的容器
     offset = 1 # 记录论坛的当前页数
-    #bound = input("Number of pages to crawl: ")
+    bound = input("Number of pages to crawl: ")
     url = 'https://www.chainnode.com/forum-2-'+str(offset)+'.html'
-    data.append(('文章名称'.decode('utf-8'),'评论数','阅览数','发布日期','正面字','负面字'))
-    # 从第一次普通访问截取cookie
-    #cookies = getCookie(url)
-    #setCookie = cookies[0]+';'+cookies[1]
-    # 将截取到的两个cookies加入到以后请求的头里
-    #HEADERS.update({'Cookie':setCookie})
     
-    #循环一直到最后一页（pg 1000）
-    while offset < 5:
+    
+    """ ----- Uncomment this if http gives error 502
+    # 从第一次普通访问截取cookie
+    cookies = getCookie(url)
+    setCookie = cookies[0]+';'+cookies[1]
+    # 将截取到的两个cookies加入到以后请求的头里
+    HEADERS.update({'Cookie':setCookie})    
+     -----"""
+
+    
+    #循环到使用者设定的页数
+    while offset < bound+1:
         html=requests.get(url,headers=HEADERS).text
         soup = BeautifulSoup(html, 'html.parser')
 
         post_divs = soup.find_all('a',attrs={'class':'bbt-block'})
-        print post_divs
 
         for div in post_divs:
             #div.prettify('gb18030')
@@ -100,7 +90,7 @@ def main():
             positive = 0
             negative = 0
             # 文章名称
-            name = div.get_text()
+            name = div.get_text().strip()
             # 获取文章链接
             link = "https://www.chainnode.com"+div.get('href')
             # 进入文章链接
@@ -110,37 +100,37 @@ def main():
             if len(ppl_box) == 1:
                 # 评论数
                 comment = soup.select('div.header-module__num > span:nth-of-type(2)')[0].get_text()
-                print comment
                 # 观看人数
                 ppl = soup.select('div.header-module__num > span:nth-of-type(1)')[0].get_text()
                 # 发布日期
                 publishDate = soup.select('time')[0].get_text()
-                #print publishDate
-                # 搜集该文章的所有文字内容：包括本文和评论
-                txt = soup.select('.comment__content')[0].get_text()
-                print txt
-                for w in txt:
-                    # 逐字检查是否在组内
-
-                    # 若该字属于正面组，positive变量加一
-                    if w in POSITIVES:
-                        positive += 1
-                    # 若该字属于负面组，negative变量加一
-                    elif w in NEGATIVES: 
-                        negative += 1
-                data.append((name,comment,ppl,publishDate,positive,negative))
                 
-                        
-            
-        # 更新页数
+                # Collect words from the content
+                paragraphs = soup.select('p')
+
+                for p in paragraphs:
+                    
+                    txt = p.get_text()
+                    
+                    for w in txt:
+                        # If the character belongs to the positive set
+                        if w in POSITIVES:
+                            positive += 1
+                        # If the character belongs to the negative set
+                        elif w in NEGATIVES: 
+                            negative += 1
+                data.append((name,comment,ppl,publishDate,positive,negative))             
+        # Update page number
         offset +=1
+        print offset
         url = 'https://www.chainnode.com/forum-2-'+str(offset)+'.html'
     
-    # 最后将结果输出到btc.csv文件里
+    # Output data into file 'btc.csv'
     with open('btc.csv', 'a') as csv_file:
         writer = csv.writer(csv_file)
+        writer.writerow([targets[0],targets[1],targets[2],targets[3], targets[4], targets[5]])
         for name, comment, ppl, publishDate, positive, negative in data:
-            writer.writerow([name.encode('utf-8'),comment,ppl,publishDate, positive, negative])
+            writer.writerow([name, comment, ppl, publishDate, positive, negative])
     
     
 if __name__  == "__main__":
