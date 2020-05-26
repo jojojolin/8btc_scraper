@@ -1,6 +1,6 @@
 # encoding=utf8
 import sys
-import urllib2
+#import urllib2
 from bs4 import BeautifulSoup
 import execjs
 import re
@@ -17,6 +17,9 @@ POSITIVES = ['好','涨','牛','红','赚']
 
 # 负面的情绪字
 NEGATIVES = ['差','跌','熊','绿','亏']
+
+# 導出的csv欄位名
+TARGETS = ['文章名称','评论数','阅览数','发布日期','正面字','负面字']
 
 
 # 用于在python里执行JS的函数    
@@ -47,7 +50,7 @@ def getCookie(theUrl):
     # 第一次访问获取动态加密的JS
     req = requests.get(url=theUrl,headers=HEADERS)
     first_html = req.content.decode('utf-8')
-    print first_html
+    print(first_html)
     # 执行JS获取Cookie
     cookie_str = executejs(first_html)
     # 将Cookie转换为字典格式
@@ -58,14 +61,13 @@ def getCookie(theUrl):
 
 
 def main():
-    reload(sys)
-    sys.setdefaultencoding('utf8')
+    #reload(sys)#python2 needs explicit encoding definition
+    #sys.setdefaultencoding('utf8')
     # 定义变量
-    targets = ['文章名称','评论数','阅览数','发布日期','正面字','负面字']
     data =[] # 储存结果的容器
     offset = 1 # 记录论坛的当前页数
     bound = input("Number of pages to crawl: ")
-    url = 'https://www.chainnode.com/forum-2-'+str(offset)+'.html'
+    bound = int(bound)
     
     
     """ ----- Uncomment this if http gives error 502
@@ -79,7 +81,10 @@ def main():
     
     #循环到使用者设定的页数
     while offset < bound+1:
+        print("On page {}".format(offset))
+        url = 'https://www.chainnode.com/forum-2-'+str(offset)+'.html'
         html=requests.get(url,headers=HEADERS).text
+        #print(html)
         soup = BeautifulSoup(html, 'html.parser')
 
         post_divs = soup.find_all('a',attrs={'class':'bbt-block'})
@@ -93,6 +98,7 @@ def main():
             name = div.get_text().strip()
             # 获取文章链接
             link = "https://www.chainnode.com"+div.get('href')
+            print(link)
             # 进入文章链接
             html = requests.get(link, headers=HEADERS).text
             soup = BeautifulSoup(html, 'html.parser')
@@ -122,13 +128,13 @@ def main():
                 data.append((name,comment,ppl,publishDate,positive,negative))             
         # Update page number
         offset +=1
-        print offset
-        url = 'https://www.chainnode.com/forum-2-'+str(offset)+'.html'
+        print(url)
+        
     
     # Output data into file 'btc.csv'
-    with open('btc.csv', 'a') as csv_file:
+    with open('btc.csv', 'w') as csv_file:
         writer = csv.writer(csv_file)
-        writer.writerow([targets[0],targets[1],targets[2],targets[3], targets[4], targets[5]])
+        writer.writerow(TARGETS)
         for name, comment, ppl, publishDate, positive, negative in data:
             writer.writerow([name, comment, ppl, publishDate, positive, negative])
     
